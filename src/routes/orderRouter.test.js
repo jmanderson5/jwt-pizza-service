@@ -57,4 +57,65 @@ describe('Pizza Order API Tests', () => {
 
     expect(response.status).toBe(403);
   });
+
+    test('admin can add a pizza to the menu', async () => {
+    const { DB, Role } = require('../database/database');
+
+    const unique = `${Date.now()}${Math.random()
+        .toString(36).slice(2)}`;
+
+    const admin = {
+        name: 'Menu Test Admin',
+        email: `menu${unique}@example.com`,
+        password: 'testpassword123',
+        roles: [{ role: Role.Admin }]
+    };
+
+    // Create an administrator
+    await DB.addUser(admin);
+
+    // Log in as administrator
+    const loginRes = await request(app)
+        .put('/api/auth')
+        .send({
+        email: admin.email,
+        password: admin.password
+        });
+
+    expect(loginRes.status).toBe(200);
+    const adminToken = loginRes.body.token;
+
+    const pizza = {
+        title: `Test Pizza ${unique}`,
+        description: 'Created by Jest',
+        image: 'test.png',
+        price: 0.01
+    };
+
+    // Add pizza to menu
+    const addRes = await request(app)
+        .put('/api/order/menu')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(pizza);
+
+    expect(addRes.status).toBe(200);
+    expect(addRes.body).toEqual(
+        expect.arrayContaining([
+        expect.objectContaining({
+            title: pizza.title,
+            description: pizza.description
+        })
+        ])
+    );
+
+    // Verify the new pizza persisted in MySQL
+    const menuRes = await request(app)
+        .get('/api/order/menu');
+
+    expect(menuRes.status).toBe(200);
+    expect(menuRes.body.some(
+        item => item.title === pizza.title
+    )).toBe(true);
+    });
+    
 });
