@@ -45,6 +45,10 @@ describe('JWT Pizza API Tests', () => {
         .post('/api/auth')
         .send(testUser);
 
+        if (response.status !== 200) {
+            console.error('Regtistration error: ', response.body);
+        }
+
     expect(response.status).toBe(200);
     expect(response.body.user.email).toBe(testUser.email);
     expect(response.body.token).toBeDefined();

@@ -56,7 +56,15 @@ jobs:
               apiKey: '${{ secrets.FACTORY_API_KEY }}',
             },
           };" > src/config.js
-
+        
+      - name: Verify database tables
+        run: |
+            mysql -h 127.0.0.1 /
+                -u root /
+                -ptempdbpassword /
+                pizza /
+                -e "SHOW TABLES;" 
+    
       - name: Tests
         run: npm test
 
