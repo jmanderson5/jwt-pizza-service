@@ -15,32 +15,6 @@ describe('User API', () => {
       expect(response.status).toBe(401);
     });
 
-    test('authenticated user can list users', async () => {
-        const testUser = {
-            name: 'list user tester',
-            email: `list${Date.now()}@test.com`,
-            password: 'password123',
-        };
-
-        // Register a user
-        const registerRes = await request(app)
-            .post('/api/auth')
-            .send(testUser);
-
-        expect(registerRes.status).toBe(200);
-
-        const token = registerRes.body.token;
-
-        // Request the users list
-        const response = await request(app)
-            .get('/api/user?page=1&limit=10')
-            .set('Authorization', `Bearer ${token}`);
-
-        expect(response.status).toBe(200);
-        expect(Array.isArray(response.body.users)).toBe(true);
-        expect(typeof response.body.more).toBe('boolean');
-    });
-
     test('diner cannot list users', async () => {
         const testUser = {
             name: 'regular diner',
@@ -66,3 +40,21 @@ describe('User API', () => {
 
   });
 });
+
+test('database lists users', async () => {
+  const { DB } = require('../database/database');
+
+  const result = await DB.listUsers(1, 10, '');
+
+  expect(Array.isArray(result.users)).toBe(true);
+  expect(typeof result.more).toBe('boolean');
+
+  for (const user of result.users) {
+    expect(user).toHaveProperty('id');
+    expect(user).toHaveProperty('name');
+    expect(user).toHaveProperty('email');
+    expect(Array.isArray(user.roles)).toBe(true);
+    expect(user).not.toHaveProperty('password');
+  }
+});
+
