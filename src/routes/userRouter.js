@@ -65,8 +65,17 @@ userRouter.get(
   '/',
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
-    res.json({ message: 'not implemented', users: [], more: false });
-  })
+    if (!req.user.isRole('admin')) {
+      return res.status(403).json({
+        message: 'Admin access required',
+      });
+    }
+
+    res.json({
+      users: [],
+      more: false,
+    });
+  }),
 );
 
 module.exports = userRouter;
