@@ -70,11 +70,24 @@ userRouter.get(
         message: 'Admin access required',
       });
     }
+    const page = Number(req.query.page ?? 1);
+    const limit = Number(req.query.limit ?? 10);
+    const name = String(req.query.name ?? '');
 
-    res.json({
-      users: [],
-      more: false,
-    });
+    if (
+      !Number.isSafeInteger(page) ||
+      page < 1 ||
+      !Number.isSafeInteger(limit) ||
+      limit < 1 ||
+      limit > 100
+    ) {
+      return res.status(400).json({
+        message: 'Invalid pagination parameters',
+      });
+    }
+
+    const result = await DB.listUsers(page, limit, name);
+    res.json(result);
   }),
 );
 
