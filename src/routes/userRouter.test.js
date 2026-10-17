@@ -129,4 +129,52 @@ test('admin can list and filter users', async () => {
     .not.toBe(page2.body.users[0].id);
 });
 
+test('admin can delete a user', async () => {
+  const { DB, Role } = require('../database/database');
+  const { setAuth } = require('./authRouter');
+
+  const unique = `${Date.now()}${Math.random().toString(36).slice(2, 8)}`;
+
+  // Create an administrator
+  const admin = await DB.addUser({
+    name: 'Delete Test Admin',
+    email: `admin-delete-${unique}@test.com`,
+    password: 'test-password',
+    roles: [{ role: Role.Admin }],
+  });
+
+  const adminToken = await setAuth(admin);
+
+  // Register a diner who will be deleted
+  const registration = await request(app)
+    .post('/api/auth')
+    .send({
+      name: 'Delete Test Diner',
+      email: `diner-delete-${unique}@test.com`,
+      password: 'test-password',
+    });
+
+  expect(registration.status).toBe(200);
+
+  const dinerId = registration.body.user.id;
+
+  // Delete the diner using the admin token
+  const response = await request(app)
+    .delete(`/api/user/${dinerId}`)
+    .set('Authorization', `Bearer ${adminToken}`);
+
+  expect(response.status).toBe(200);
+
+  // Verify the deleted diner no longer appears
+  const usersResponse = await request(app)
+    .get(`/api/user?name=Delete Test Diner&limit=100`)
+    .set('Authorization', `Bearer ${adminToken}`);
+
+  expect(usersResponse.status).toBe(200);
+  expect(
+    usersResponse.body.users.some(
+      (user) => Number(user.id) === Number(dinerId)
+    )
+  ).toBe(false);
+});
 
