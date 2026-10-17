@@ -56,7 +56,40 @@ userRouter.delete(
   '/:userId',
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
-    res.json({ message: 'not implemented' });
+    // Only administrators can delete users
+    if (!req.user.isRole(Role.Admin)) {
+      return res.status(403).json({
+        message: 'Admin access required',
+      });
+    }
+
+    const userId = Number(req.params.userId);
+
+    // Validate the user ID
+    if (!Number.isSafeInteger(userId) || userId < 1) {
+      return res.status(400).json({
+        message: 'Invalid user ID',
+      });
+    }
+
+    // Prevent an administrator from deleting themselves
+    if (Number(req.user.id) === userId) {
+      return res.status(403).json({
+        message: 'Cannot delete your own account',
+      });
+    }
+
+    const deleted = await DB.deleteUser(userId);
+
+    if (!deleted) {
+      return res.status(404).json({
+        message: 'User not found',
+      });
+    }
+
+    return res.status(200).json({
+      message: 'User deleted successfully',
+    });
   })
 );
 

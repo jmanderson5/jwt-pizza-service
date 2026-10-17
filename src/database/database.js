@@ -117,6 +117,57 @@ class DB {
       await connection.end();
     }
   }
+  
+  async deleteUser(userId) {
+    const connection = await this.getConnection();
+
+    try {
+      await connection.beginTransaction();
+
+      try {
+        // Make sure the user exists
+        const users = await this.query(
+          connection,
+          'SELECT id FROM user WHERE id = ? FOR UPDATE',
+          [userId]
+        );
+
+        if (users.length === 0) {
+          await connection.rollback();
+          return false;
+        }
+
+        // Revoke the deleted user's login sessions
+        await this.query(
+          connection,
+          'DELETE FROM auth WHERE userId = ?',
+          [userId]
+        );
+
+        // Remove the user's assigned roles
+        await this.query(
+          connection,
+          'DELETE FROM userRole WHERE userId = ?',
+          [userId]
+        );
+
+        // Remove the user account
+        await this.query(
+          connection,
+          'DELETE FROM user WHERE id = ?',
+          [userId]
+        );
+
+        await connection.commit();
+        return true;
+      } catch (error) {
+        await connection.rollback();
+        throw error;
+      }
+    } finally {
+      await connection.end();
+    }
+  }
 
   async updateUser(userId, name, email, password) {
     const connection = await this.getConnection();
