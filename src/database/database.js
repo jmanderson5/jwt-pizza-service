@@ -167,7 +167,7 @@ class DB {
     } finally {
       await connection.end();
     }
-  }
+  } 
 
   async updateUser(userId, name, email, password) {
     const connection = await this.getConnection();
